@@ -35,14 +35,138 @@ class LocAgent:
         # previous action
         self.prev_action = None
 
-        self.P = None
+        prob = (1.0 / (len(self.locations) * 4))
+        self.P = prob * np.ones([len(self.locations), 4], dtype=np.float)
 
     def __call__(self, percept):
-        # update posterior
-        # TODO PUT YOUR CODE HERE
+        arr = np.zeros([42, 42], dtype=np.float)  # location
+        arr_2 = np.zeros([42, 4], dtype=np.float)  # sensor
+        arr_3 = np.zeros([4, 4], dtype=np.float)  # orientation
+        directions = ['N', 'E', 'S', 'W']
+        perceptions = ['fwd', 'bckwd', 'left', 'right']
 
+        if self.prev_action is not None:
+            if self.prev_action == 'forward':
+                for i in range(4):
+                    arr_3[i][i] = 1.0
 
-        # -----------------------
+                if 'bump' in percept:
+                    for i in range(42):
+                        arr[i][i] = 1.0
+                else:
+                    for ind, val in enumerate(self.locations):
+                        cnt = 4
+                        loc_list = []
+                        for idx, dir in enumerate(directions):
+                            if dir == 'N':
+                                ret_loc = (val[0], val[1] + 1)
+                            elif dir == 'E':
+                                ret_loc = (val[0] + 1, val[1])
+                            elif dir == 'W':
+                                ret_loc = (val[0] - 1, val[1])
+                            elif dir == 'S':
+                                ret_loc = (val[0], val[1] - 1)
+
+                            if (ret_loc[0] < 0 or ret_loc[0] >= 16) or ret_loc in self.walls:
+                                cnt -= 1
+                            else:
+                                x = self.loc_to_idx[ret_loc]
+                                loc_list.append(x)
+
+                        if 4 >= cnt > 0:
+                            for loc in loc_list:
+                                arr[ind][loc] = 0.95 / cnt
+                            arr[ind][ind] = 0.05
+                        elif cnt == 0:
+                            arr[ind][ind] = 0.0
+
+            elif self.prev_action == 'turnright':
+                for i in range(42):
+                    arr[i][i] = 1.0
+
+                for ind, dir in enumerate(directions):
+                    if dir == 'N':
+                        cur_dir = 'E'
+                        arr_3[ind][ind+1] = 0.95
+                        arr_3[ind][ind] = 0.05
+                    elif dir == 'E':
+                        cur_dir = 'S'
+                        arr_3[ind][ind + 1] = 0.95
+                        arr_3[ind][ind] = 0.05
+                    elif dir == 'S':
+                        cur_dir = 'W'
+                        arr_3[ind][ind + 1] = 0.95
+                        arr_3[ind][ind] = 0.05
+                    elif dir == 'W':
+                        cur_dir = 'N'
+                        arr_3[ind][0] = 0.95
+                        arr_3[ind][ind] = 0.05
+
+            elif self.prev_action == 'turnleft':
+                for i in range(42):
+                    arr[i][i] = 1.0
+
+                for ind, dir in enumerate(directions):
+                    if dir == 'N':
+                        cur_dir = 'W'
+                        arr_3[ind][3] = 0.95
+                        arr_3[ind][ind] = 0.05
+                    elif dir == 'E':
+                        cur_dir = 'N'
+                        arr_3[ind][ind - 1] = 0.95
+                        arr_3[ind][ind] = 0.05
+                    elif dir == 'S':
+                        cur_dir = 'E'
+                        arr_3[ind][ind - 1] = 0.95
+                        arr_3[ind][ind] = 0.05
+                    elif dir == 'W':
+                        cur_dir = 'S'
+                        arr_3[ind][ind - 1] = 0.95
+                        arr_3[ind][ind] = 0.05
+            else:
+                pass
+
+            for ind, val in enumerate(self.locations):
+                for dir in directions:
+                    for sens in perceptions:
+                        if sens == 'fwd':
+                            pass
+                        elif sens == 'bckwd':
+                            pass
+                        elif sens == 'left':
+                            pass
+                        elif sens == 'right':
+                            pass
+            #     it = 1.0
+            #     for cur_dir in ['N', 'E', 'S', 'W']:
+            #         if cur_dir == 'N':
+            #             ret_loc = (val[0], val[1] + 1)
+            #         elif cur_dir == 'E':
+            #             ret_loc = (val[0] + 1, val[1])
+            #         elif cur_dir == 'S':
+            #             ret_loc = (val[0], val[1] - 1)
+            #         else:
+            #             ret_loc = (val[0] - 1, val[1])
+            #
+            #         if (ret_loc in self.walls or ret_loc[0] < 0 or ret_loc[0] >= 16 and cur_dir in percept) or (
+            #                 ret_loc not in self.walls and 0 <= ret_loc[0] < 16 and cur_dir not in percept):
+            #             it *= 0.9
+            #
+            #         elif (ret_loc in self.walls or ret_loc[0] < 0 or ret_loc[0] >= 16 and cur_dir not in percept) or (
+            #                 ret_loc not in self.walls and 0 <= ret_loc[0] < 16 and cur_dir in percept):
+            #             it *= 0.1
+            #
+            #         else:
+            #             pass
+            #
+            #     arr_2[self.loc_to_idx[val]] = it
+            # iks = np.transpose(arr_2)
+            # # print(self.P)
+            #
+
+            # sP = np.multiply(iks, np.dot(np.transpose(arr), self.P))
+            # sP_div = sP.sum()
+            # self.P = sP / sP_div
 
         action = 'forward'
         # TODO CHANGE THIS HEURISTICS TO SPEED UP CONVERGENCE
@@ -61,7 +185,9 @@ class LocAgent:
     def getPosterior(self):
         # directions in order 'N', 'E', 'S', 'W'
         P_arr = np.zeros([self.size, self.size, 4], dtype=np.float)
-
+        for idx, loc in enumerate(self.locations):
+            for i in range(4):
+                P_arr[loc[0], loc[1], i] = self.P[idx][i]
         # put probabilities in the array
         # TODO PUT YOUR CODE HERE
 

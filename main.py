@@ -230,12 +230,12 @@ def main():
         view.update(env, P)
         update(rate)
         # uncomment to pause before action
-        view.pause()
+        #view.pause()
 
         env.doAction(action)
 
     # pause until mouse clicked
-    view.pause()
+    #view.pause()
 
 
 if __name__ == '__main__':
