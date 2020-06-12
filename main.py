@@ -183,7 +183,7 @@ def main():
     # chance that the agent will not move forward despite the command
     eps_move = 0.05
     # number of actions to execute
-    n_steps = 40
+    n_steps = 80
     # size of the environment
     env_size = 16
     # map of the environment: 1 - wall, 0 - free
