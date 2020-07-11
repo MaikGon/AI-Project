@@ -37,7 +37,7 @@ class LocAgent:
 
         prob = (1.0 / (len(self.locations) * 4))
         self.P = prob * np.ones([len(self.locations), 4], dtype=np.float)
-
+        self.move_arr = []
     def __call__(self, percept):
         arr = np.zeros([42, 42], dtype=np.float)  # location
         arr_2 = np.zeros([42, 4], dtype=np.float)  # sensor
@@ -209,66 +209,40 @@ class LocAgent:
                     arr_2[ind][dir_ind] = count
 
             arr_t = np.transpose(arr)
-            arr_t2 = np.transpose(arr_2)
 
             temp_P = np.multiply(np.dot(np.dot(arr_t, self.P), arr_3), arr_2)
             self.P = temp_P / temp_P.sum()
 
-
         action = 'forward'
-        # TODO CHANGE THIS HEURISTICS TO SPEED UP CONVERGENCE
-        # if there is a wall ahead then lets turn
-        # if 'fwd' in percept:
-        #     # higher chance of turning left to avoid getting stuck in one location
-        #     action = np.random.choice(['turnleft', 'turnright'], 1, p=[0.8, 0.2])
-        # else:
-        #     # prefer moving forward to explore
-        #     action = np.random.choice(['forward', 'turnleft', 'turnright'], 1, p=[0.8, 0.1, 0.1])
 
-
-        # if (self.prev_action == 'turnleft' or self.prev_action == 'turnright') and 'fwd' not in percept:
-        #     action = np.random.choice(['forward', 'turnleft'], 1, p=[0.8, 0.2])
-        # elif 'fwd' in percept and 'right' in percept:
-        #     action = 'turnleft'
-        # elif 'fwd' in percept and 'left' in percept:
-        #     action = 'turnright'
-        # elif 'fwd' in percept:
-        #     action = 'turnleft'
-        # elif (('right' in percept and 'left' in percept) or ('right' not in percept and 'left' not in percept)) and 'fwd' not in percept:
-        #     action = 'forward'
-        # elif 'left' in percept:
-        #     action = 'turnright'
-        # elif 'right' in percept:
-        #     action = 'turnleft'
-        # else:
-        #     action = 'forward'
-
-        if (self.prev_action == 'turnleft' or self.prev_action == 'turnright') and 'fwd' not in percept:
-            action = 'forward'
-        elif 'left' not in percept:
-            action = 'turnleft'
-        elif 'left' in percept and 'right' in percept and 'fwd' in percept:
-            action = 'turnleft'
-        elif 'fwd' not in percept:
-            action = 'forward'
-        else:
+        if len(self.move_arr) > 8 and (''.join(self.move_arr[-8:]) == 'turnleftforwardturnleftforwardturnleftforwardturnleftforward' or ''.join(self.move_arr[-8:]) == 'forwardturnleftforwardturnleftforwardturnleftforwardturnleft'):
+            # if agent will perform 4, the same moves (turnleft, forward), try to get out of the loop
             action = 'turnright'
+
+        else:
+            # if there is an option, turn left or stick to the left wall
+            if (self.prev_action == 'turnleft' or self.prev_action == 'turnright') and 'fwd' not in percept:
+                action = 'forward'
+            elif 'left' not in percept:
+                action = 'turnleft'
+            elif 'left' in percept and 'right' in percept and 'fwd' in percept:
+                action = 'turnleft'
+            elif 'fwd' not in percept:
+                action = 'forward'
+            else:
+                action = 'turnright'
+
+        self.move_arr.append(action)
 
         self.prev_action = action
 
         return action
 
     def getPosterior(self):
-        # directions in order 'N', 'E', 'S', 'W'
         P_arr = np.zeros([self.size, self.size, 4], dtype=np.float)
         for idx, loc in enumerate(self.locations):
             for i in range(4):
                 P_arr[loc[0], loc[1], i] = self.P[idx][i]
-        # put probabilities in the array
-        # TODO PUT YOUR CODE HERE
-
-
-        # -----------------------
 
         return P_arr
 
