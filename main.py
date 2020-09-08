@@ -147,6 +147,7 @@ class LocView:
                     for i, dir in enumerate(DIRECTIONS):
                         c = int(round(P[loc[0], loc[1], i] * 255))
                         self.dir_cells[(loc[0], loc[1], dir)].setFill('#ff%02x%02x' % (255 - c, 255 - c))
+
         if self.agt:
             self.agt.undraw()
         if state.agentLoc:
