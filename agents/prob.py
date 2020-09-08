@@ -201,7 +201,7 @@ class LocAgent:
 
     def count_sens_prob(self, count, ret_loc, sens, percept):
         var_fir, var_sec = False, False
-        if ret_loc in self.walls or ret_loc[0] < 0 or ret_loc[0] >= self.size:  # check if this position is in wall or outside the map
+        if ret_loc in self.walls or ret_loc[0] < 0 or ret_loc[0] >= self.size:  # check if this position is in the wall or outside the map
             var_fir = True
         if ret_loc not in self.walls and 0 <= ret_loc[0] < self.size:  # check if this position is in the allowed location
             var_sec = True
