@@ -42,7 +42,7 @@ class LocAgent:
 
         prob = (1.0 / (len(self.locations) * 4))
         self.P = prob * np.ones([len(self.locations), 4], dtype=np.float)
-        self.move_arr = []
+        self.move_arr = []  # an array stacking actions performed by agent (for heuristics)
 
     def __call__(self, percept):
         arr_loc = np.zeros([self.num_locations, self.num_locations], dtype=np.float)  # location
@@ -59,11 +59,11 @@ class LocAgent:
         if self.prev_action is not None:
             if self.prev_action == 'forward':
                 for i in range(self.num_orientations):
-                    arr_orient[i][i] = 1.0
+                    arr_orient[i][i] = 1.0  # if forward then orientation didn't change
 
                 if 'bump' in percept:
                     for i in range(self.num_locations):
-                        arr_loc[i][i] = 1.0
+                        arr_loc[i][i] = 1.0  # if agent hit the wall, then location didn't change
                 else:
                     for ind, val in enumerate(self.locations):
                         cnt = 4  # counts how many free spaces there are around the agent - 4 means no walls
@@ -86,39 +86,39 @@ class LocAgent:
 
                         if cnt != 0:
                             for loc in loc_list:
+                                # because we do not know our orientation, when moving forward we have to
                                 # divide the probability of moving forward by number of free spaces around the agent
+                                # for example, if agent is in the location from where he can go in 3 directions,
+                                # the probability that he is in one of these location should be 0.95/3
                                 arr_loc[ind][loc] = self.turn_move_prob / cnt
                             arr_loc[ind][ind] = self.eps_move
 
-            elif self.prev_action == 'turnright':
+            elif self.prev_action == 'turnright' or self.prev_action == 'turnleft':
                 for i in range(self.num_locations):
-                    arr_loc[i][i] = 1.0
+                    arr_loc[i][i] = 1.0  # if there was a turn, then location didn't change
 
-                for ind, dir in enumerate(directions):
-                    if dir == 'N':
-                        arr_orient[ind][ind+1] = self.turn_move_prob
-                    elif dir == 'E':
-                        arr_orient[ind][ind + 1] = self.turn_move_prob
-                    elif dir == 'S':
-                        arr_orient[ind][ind + 1] = self.turn_move_prob
-                    elif dir == 'W':
-                        arr_orient[ind][0] = self.turn_move_prob
-                    arr_orient[ind][ind] = self.eps_move
+                if self.prev_action == 'turnright':
+                    for ind, dir in enumerate(directions):
+                        if dir == 'N':
+                            arr_orient[ind][ind+1] = self.turn_move_prob
+                        elif dir == 'E':
+                            arr_orient[ind][ind + 1] = self.turn_move_prob
+                        elif dir == 'S':
+                            arr_orient[ind][ind + 1] = self.turn_move_prob
+                        elif dir == 'W':
+                            arr_orient[ind][0] = self.turn_move_prob
 
-            elif self.prev_action == 'turnleft':
-                for i in range(self.num_locations):
-                    arr_loc[i][i] = 1.0
-
-                for ind, dir in enumerate(directions):
-                    if dir == 'N':
-                        arr_orient[ind][3] = self.turn_move_prob
-                    elif dir == 'E':
-                        arr_orient[ind][ind - 1] = self.turn_move_prob
-                    elif dir == 'S':
-                        arr_orient[ind][ind - 1] = self.turn_move_prob
-                    elif dir == 'W':
-                        arr_orient[ind][ind - 1] = self.turn_move_prob
-                    arr_orient[ind][ind] = self.eps_move
+                else:
+                    for ind, dir in enumerate(directions):
+                        if dir == 'N':
+                            arr_orient[ind][3] = self.turn_move_prob
+                        elif dir == 'E':
+                            arr_orient[ind][ind - 1] = self.turn_move_prob
+                        elif dir == 'S':
+                            arr_orient[ind][ind - 1] = self.turn_move_prob
+                        elif dir == 'W':
+                            arr_orient[ind][ind - 1] = self.turn_move_prob
+                arr_orient[ind][ind] = self.eps_move
 
             for ind, val in enumerate(self.locations):
                 for dir_ind, dir in enumerate(directions):
@@ -175,7 +175,7 @@ class LocAgent:
                     arr_sensor[ind][dir_ind] = count
 
             temp_P = np.multiply(np.dot(np.dot(np.transpose(arr_loc), self.P), arr_orient), arr_sensor)
-            self.P = temp_P / temp_P.sum()
+            self.P = temp_P / temp_P.sum(keepdims=True)
 
         if len(self.move_arr) >= 8 and ''.join(self.move_arr[-8:]) == ''.join(heur_arr):
             # if agent will perform 4, the same moves (turnleft, forward), try to escape the loop
@@ -183,7 +183,11 @@ class LocAgent:
 
         else:
             # if there is an option, turn left or stick to the left wall
-            if (self.prev_action == 'turnleft' or self.prev_action == 'turnright') and 'fwd' not in percept:
+            if 'bump' in percept and 'left' not in percept:
+                action = 'turnleft'
+            elif 'bump' in percept and 'left' in percept:
+                action = 'turnright'
+            elif (self.prev_action == 'turnleft' or self.prev_action == 'turnright') and 'fwd' not in percept:
                 action = 'forward'
             elif 'left' not in percept:
                 action = 'turnleft'
@@ -206,7 +210,12 @@ class LocAgent:
         if ret_loc not in self.walls and 0 <= ret_loc[0] < self.size:  # check if this position is in the allowed location
             var_sec = True
 
-        if (var_fir and sens in percept) or (var_sec and sens not in percept):
+        if 'bump' in percept and sens == 'fwd' and sens in percept and var_fir:
+            count *= 1.0
+        elif 'bump' in percept and sens == 'fwd' and sens in percept and var_sec:
+            count *= 0.0
+
+        elif (var_fir and sens in percept) or (var_sec and sens not in percept):
             count *= self.obs_prob
 
         else:
