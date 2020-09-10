@@ -45,9 +45,9 @@ class LocAgent:
         self.move_arr = []  # an array stacking actions performed by agent (for heuristics)
 
     def __call__(self, percept):
-        arr_loc = np.zeros([self.num_locations, self.num_locations], dtype=np.float)  # location
-        arr_sensor = np.zeros([self.num_locations, self.num_orientations], dtype=np.float)  # sensor
-        arr_orient = np.zeros([self.num_orientations, self.num_orientations], dtype=np.float)  # orientation
+        arr_loc = np.zeros([self.num_locations, self.num_locations], dtype=np.float)  # location, size - 42x42
+        arr_sensor = np.zeros([self.num_locations, self.num_orientations], dtype=np.float)  # sensor, size - 42x4
+        arr_orient = np.zeros([self.num_orientations, self.num_orientations], dtype=np.float)  # orientation, size - 4x4
 
         heur_arr = []  # to help agent leave the loop of four the same moves (in heuristics)
         for i in range(4):
@@ -61,6 +61,7 @@ class LocAgent:
                 for i in range(self.num_orientations):
                     arr_orient[i][i] = 1.0  # if forward then orientation didn't change
 
+                # BUMP
                 if 'bump' in percept:
                     for i in range(self.num_locations):
                         arr_loc[i][i] = 1.0  # if agent hit the wall, then location didn't change
@@ -89,7 +90,7 @@ class LocAgent:
                                 # because we do not know our orientation, when moving forward we have to
                                 # divide the probability of moving forward by number of free spaces around the agent
                                 # for example, if agent is in the location from where he can go in 3 directions,
-                                # the probability that he is in one of these location should be 0.95/3
+                                # then the probability of being in one of these location should be 0.95/3
                                 arr_loc[ind][loc] = self.turn_move_prob / cnt
                             arr_loc[ind][ind] = self.eps_move
 
@@ -210,15 +211,15 @@ class LocAgent:
         if ret_loc not in self.walls and 0 <= ret_loc[0] < self.size:  # check if this position is in the allowed location
             var_sec = True
 
-        if 'bump' in percept and sens == 'fwd' and sens in percept and var_fir:
-            count *= 1.0
-        elif 'bump' in percept and sens == 'fwd' and sens in percept and var_sec:
-            count *= 0.0
+        # BUMP
+        if 'bump' in percept and var_fir:
+            count *= 1.0  # bump gives us 100% sure, that there is a wall ahead of us
+        elif 'bump' in percept and var_sec:
+            count *= 0.0  # if bump occurred, and ret_loc is not a wall, we can reject the location
 
         elif (var_fir and sens in percept) or (var_sec and sens not in percept):
             count *= self.obs_prob
-
-        else:
+        elif (var_fir and sens not in percept) or (var_sec and sens in percept):
             count *= self.eps_perc
 
         return count
