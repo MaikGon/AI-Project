@@ -108,6 +108,7 @@ class LocAgent:
                             arr_orient[ind][ind + 1] = self.turn_move_prob
                         elif dir == 'W':
                             arr_orient[ind][0] = self.turn_move_prob
+                        arr_orient[ind][ind] = self.eps_move
 
                 else:
                     for ind, dir in enumerate(directions):
@@ -119,7 +120,7 @@ class LocAgent:
                             arr_orient[ind][ind - 1] = self.turn_move_prob
                         elif dir == 'W':
                             arr_orient[ind][ind - 1] = self.turn_move_prob
-                arr_orient[ind][ind] = self.eps_move
+                        arr_orient[ind][ind] = self.eps_move
 
             for ind, val in enumerate(self.locations):
                 for dir_ind, dir in enumerate(directions):
@@ -212,9 +213,9 @@ class LocAgent:
             var_sec = True
 
         # BUMP
-        if 'bump' in percept and var_fir:
+        if 'bump' in percept and sens == 'fwd' and var_fir:
             count *= 1.0  # bump gives us 100% sure, that there is a wall ahead of us
-        elif 'bump' in percept and var_sec:
+        elif 'bump' in percept and sens == 'fwd' and var_sec:
             count *= 0.0  # if bump occurred, and ret_loc is not a wall, we can reject the location
 
         elif (var_fir and sens in percept) or (var_sec and sens not in percept):
