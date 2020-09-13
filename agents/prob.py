@@ -136,8 +136,6 @@ class LocAgent:
                             elif sens == 'right':
                                 ret_loc = (val[0] + 1, val[1])
 
-                            count = self.count_sens_prob(count, ret_loc, sens, percept)
-
                         elif dir == "E":
                             if sens == 'fwd':
                                 ret_loc = (val[0] + 1, val[1])
@@ -147,8 +145,6 @@ class LocAgent:
                                 ret_loc = (val[0], val[1] + 1)
                             elif sens == 'right':
                                 ret_loc = (val[0], val[1] - 1)
-
-                            count = self.count_sens_prob(count, ret_loc, sens, percept)
 
                         elif dir == "S":
                             if sens == 'fwd':
@@ -160,8 +156,6 @@ class LocAgent:
                             elif sens == 'right':
                                 ret_loc = (val[0] - 1, val[1])
 
-                            count = self.count_sens_prob(count, ret_loc, sens, percept)
-
                         elif dir == "W":
                             if sens == 'fwd':
                                 ret_loc = (val[0] - 1, val[1])
@@ -172,7 +166,7 @@ class LocAgent:
                             elif sens == 'right':
                                 ret_loc = (val[0], val[1] + 1)
 
-                            count = self.count_sens_prob(count, ret_loc, sens, percept)
+                        count = self.count_sens_prob(count, ret_loc, sens, percept)
 
                     arr_sensor[ind][dir_ind] = count
 
